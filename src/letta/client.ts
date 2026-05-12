@@ -129,8 +129,8 @@ export async function findConversationBySummary(
 
   const params = new URLSearchParams({
     agent_id: agentId,
-    summary,
-    limit: "1",
+    summary_search: summary,
+    limit: "10",
     order: "desc",
   });
   const url = `${LETTA_API_BASE_URL}/v1/conversations/?${params}`;
@@ -152,7 +152,8 @@ export async function findConversationBySummary(
       id: string;
       summary: string;
     }>;
-    const match = data?.[0];
+    // Client-side exact match — summary_search is substring-based (SQL LIKE)
+    const match = data?.find((c) => c.summary === summary);
     if (match) {
       console.log(`Found existing conversation for ${summary}: ${match.id}`);
       return match.id;
