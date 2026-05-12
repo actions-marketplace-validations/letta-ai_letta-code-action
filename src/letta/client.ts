@@ -130,7 +130,7 @@ export async function findConversationBySummary(
   const params = new URLSearchParams({
     agent_id: agentId,
     summary_search: summary,
-    limit: "10",
+    limit: "1",
     order: "desc",
   });
   const url = `${LETTA_API_BASE_URL}/v1/conversations/?${params}`;
