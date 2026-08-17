@@ -13,8 +13,21 @@ import { createPrompt, generateDefaultPrompt } from "../../create-prompt";
 import { isEntityContext } from "../../github/context";
 import type { PreparedContext } from "../../create-prompt/types";
 import type { FetchDataResult } from "../../github/data/fetcher";
-import { findExistingAgent } from "../../letta/find-existing-agent";
+import {
+  findExistingAgent,
+  type ExistingAgentInfo,
+} from "../../letta/find-existing-agent";
 import { parseTriggerFromContext } from "../../letta/trigger-parser";
+
+export function existingConversationMatchesConfiguredAgent(
+  configuredAgentId: string,
+  existingAgent: ExistingAgentInfo | null,
+): existingAgent is ExistingAgentInfo & { conversationId: string } {
+  return Boolean(
+    existingAgent?.conversationId &&
+      existingAgent.agentId === configuredAgentId,
+  );
+}
 
 /**
  * Tag mode implementation.
@@ -57,8 +70,10 @@ export const tagMode: Mode = {
     return [];
   },
 
-  shouldCreateTrackingComment() {
-    return true;
+  shouldCreateTrackingComment(context?: {
+    inputs?: { trackingComment?: boolean };
+  }) {
+    return context?.inputs?.trackingComment ?? true;
   },
 
   async prepare({
@@ -105,7 +120,21 @@ export const tagMode: Mode = {
         },
       );
 
-      if (existingAgent?.conversationId) {
+      if (
+        existingAgent?.conversationId &&
+        existingAgent.agentId !== configuredAgentId
+      ) {
+        console.log(
+          `Ignoring existing conversation ${existingAgent.conversationId} because it belongs to agent ${existingAgent.agentId}, not configured agent ${configuredAgentId}`,
+        );
+      }
+
+      if (
+        existingConversationMatchesConfiguredAgent(
+          configuredAgentId,
+          existingAgent,
+        )
+      ) {
         // Resume existing conversation
         console.log(
           `Resuming existing conversation: ${existingAgent.conversationId}`,
@@ -173,9 +202,14 @@ export const tagMode: Mode = {
       }
     }
 
-    // Create initial tracking comment
-    const commentData = await createInitialComment(octokit.rest, context);
-    const commentId = commentData.id;
+    // Create initial tracking comment (skip if tracking_comment is disabled)
+    let commentId: number | undefined;
+    if (context.inputs.trackingComment) {
+      const commentData = await createInitialComment(octokit.rest, context);
+      commentId = commentData.id;
+    } else {
+      console.log("Tracking comment disabled, skipping initial comment");
+    }
 
     const triggerTime = extractTriggerTimestamp(context);
 
