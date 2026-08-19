@@ -167,6 +167,23 @@ describe("prepareRunConfig", () => {
     });
   });
 
+  describe("environment handling", () => {
+    test("routes execution through the configured environment", () => {
+      const config = prepareRunConfig(mockPromptPath, {
+        environment: "letta-mini",
+      });
+      expect(config.lettaArgs).toContain("--environment");
+      expect(config.lettaArgs).toContain("letta-mini");
+    });
+
+    test("does not route execution when environment is empty", () => {
+      const config = prepareRunConfig(mockPromptPath, {
+        environment: "",
+      });
+      expect(config.lettaArgs).not.toContain("--environment");
+    });
+  });
+
   describe("always includes required flags", () => {
     test("always includes --yolo flag", () => {
       const config = prepareRunConfig(mockPromptPath, {});

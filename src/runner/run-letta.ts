@@ -139,6 +139,7 @@ export type LettaOptions = {
   createNewConversation?: boolean;
   pathToLettaExecutable?: string;
   showFullOutput?: string;
+  environment?: string;
 };
 
 type PreparedConfig = {
@@ -155,9 +156,10 @@ export function prepareRunConfig(
   // 1. Parse custom args first to detect conflicts
   // 2. Conversation/Agent flags for resumption (with conflict handling)
   // 3. Model flag if specified
-  // 4. Prompt flag
-  // 5. Remaining user's custom args
-  // 6. BASE_ARGS (always last)
+  // 4. Environment flag if specified
+  // 5. Prompt flag
+  // 6. Remaining user's custom args
+  // 7. BASE_ARGS (always last)
 
   const lettaArgs: string[] = [];
 
@@ -235,6 +237,10 @@ export function prepareRunConfig(
   // YOLO mode - auto-approve all tool calls in headless mode
   // This is required for CI where there's no human to approve
   lettaArgs.push("--yolo");
+
+  if (options.environment?.trim()) {
+    lettaArgs.push("--environment", options.environment.trim());
+  }
 
   // Prompt flag
   lettaArgs.push("-p");
